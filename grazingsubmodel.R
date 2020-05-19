@@ -23,7 +23,7 @@ herb_now = tree_last * (1 - exp(-a * herb_last))
 
 # Running the function across the desired timesteps
 
-for(i in 1:length(t))){
+for(i in 1:length(t)){
   
   tree_now[i] = tree_survive * tree_last[t - 1] * exp(-a * herb_last[i])
   herbivore_now[i] = tree_last[t - 1] * (1 - exp(-a * herb_last[i]))
