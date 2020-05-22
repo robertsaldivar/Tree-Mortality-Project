@@ -5,6 +5,9 @@
   #the last bin is basically a 'kill bin;' age-related mortality is set to 100% for this bin by default, meaning the model
   #causes all trees over age 100 to die immediately
 
+
+###5/19/20 - let's start with it being simpler, just 10 bins for each of the decades between 0 and 100
+
 #at each timestep
 
 #in all of the below submodels, 'dpops' is the change in pops for each age bin JUST FROM THAT SUBMODEL
