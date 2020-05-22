@@ -1,0 +1,64 @@
+---
+title: "Tree Population Modeling"
+author: "Kaili Brande, Trevor Romich, Robert Saldivar"
+date: "5/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Grazing Submodel
+
+```{r}
+
+source("../R/grazingsubmodel.R")
+
+# Alpha values for the effect of herbivores on trees, for each of the age classes
+alpha_herb_1 =
+alpha_herb_2 =
+alpha_herb_3 =
+alpha_herb_4 =
+alpha_herb_5 =
+alpha_herb_6 =
+alpha_herb_7 =
+alpha_herb_8 =
+alpha_herb_9 =
+alpha_herb_10 =
+  
+# Alpha values for the effect of trees on herbivores, for each of the age classes
+alpha_tree_1 =
+alpha_tree_2 =
+alpha_tree_3 =
+alpha_tree_4 =
+alpha_tree_5 =
+alpha_tree_6 =
+alpha_tree_7 =
+alpha_tree_8 =
+alpha_tree_9 =
+alpha_tree_10 =
+  
+# Survivability rates based on mortality rates per thousand per decade
+p12 = 0.9
+p23 = 0.7
+p34 = 0.2
+
+# Initial population parameters
+surv_micro = c(p12,p23,p34)
+ini = c(1000,1000, 1000)
+nmonths = 12
+alpha_herb = c()
+alpha_tree = c()
+
+# Running the model over this data
+micro_pop=evolve_pop(surv_micro, ini, nmonths, alpha, herb_n, trees_n)
+
+
+# Calcuating the total population size after 12 months
+micro_pop$poptot[12]
+
+
+```
+

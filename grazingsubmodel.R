@@ -11,34 +11,18 @@
 # Two options for this submodel: 
 # 1. use equations that give survivability for each age class (factor in age class) for trees + herbs
 
-# Alpha values for the effect of herbivores on trees, for each of the age classes
-alpha_herb_1 =
-alpha_herb_2 =
-alpha_herb_3 =
-alpha_herb_4 =
-alpha_herb_5 =
-alpha_herb_6 =
-alpha_herb_7 =
-alpha_herb_8 =
-alpha_herb_9 =
-alpha_herb_10 =
-  
-# Alpha values for the effect of trees on herbivores, for each of the age classes
-
-alpha_tree_1 =
-alpha_tree_2 =
-alpha_tree_3 =
-alpha_tree_4 =
-alpha_tree_5 =
-alpha_tree_6 =
-alpha_tree_7 =
-alpha_tree_8 =
-alpha_tree_9 =
-alpha_tree_10 =
-
 # The survivability equations below are based off equations from Kang et al. 2008 
 
-grazingsubmodel = function(survivability, initialpop, nstep) {
+# The following assumptions are made in this model: 
+## - entire canopy of individual tree is accessible to the herbivore at all times
+## - herbivores are always present (at all time steps), they are not seasonal grazers
+## - trees do not lose leaves seasonally, able to be eaten by herbivores at all time steps
+## - alpha values determined for each age class were based on biological understanding that younger
+##   individuals usually produce more palatable leaves (are more preferred by herbivores than 
+##   older trees are)
+
+
+grazingsubmodel = function(survivability, initialpop, nstep, alpha, herb_n, trees_n) {
   
   # the number of age classes
   nclasses = 10
@@ -55,7 +39,7 @@ grazingsubmodel = function(survivability, initialpop, nstep) {
     survivability_trees[i] = survivability[i] - (alpha_herb * herb_n)
     
     # survivability for herbivores
-    survivability_herbs[i] = survivability[i] - (alpha_trees * trees_n)
+    survivability_herbs[i] = survivability[i] - (alpha_tree * trees_n)
     
      }
   leslie_matrix[nclasses,nclasses] = survivability[nclasses]
@@ -93,7 +77,7 @@ grazingsubmodel = function(survivability, initialpop, nstep) {
 alpha_herb = 
 alpha_tree = 
 
-grazingsubmodel = function( ){
+grazingsubmodel = function(alpha_herb, alpha_tree, herb_n, tree_n, tree_K){
   
   tree_nplus1 = tree_n * exp(r * (1 - (tree_n/tree_K)) - (alpha * herb_n)
  
