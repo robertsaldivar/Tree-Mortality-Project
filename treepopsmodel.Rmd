@@ -1,0 +1,123 @@
+---
+title: "tree pops model"
+author: "Trevor L Romich"
+date: "5/21/2020"
+output: html_document
+---
+
+# Model of tree population (by age class) over time
+
+```{r setup, include=FALSE}
+#source("age_fxns.R") #get the age growth and mortality functions - currently not actually needed!
+
+source("Drought.R") #get the drought functions
+
+
+```
+
+```{r model inputs}
+###ENTER THE DESIRED INPUTS HERE
+t = 100 #the length of time (in years) for the model to run
+
+
+initialpops = c(1000,200,188,170,153,120,80,37,15,6) #pops in each age bin (age bins are 0-9,10-19,20-29, etc, with last being 90-99)
+
+lpops = length(initialpops) #the NUMBER of different age bins
+
+initialherbpops = 800 #total population of herbivores at start
+
+fert_rates = c(0,          #0-9
+               0,          #10-19
+               0.5,        #20-29
+               0.5,        #30-39
+               0.5,        #40-49
+               0.5,        #50-59
+               0.5,        #60-69
+               0.5,        #70-79
+               0.5,        #80-89
+               0.5         #90-99
+               ) #fraction of the population in each age bin that is added to the first age bin as new seedlings
+#example: if the 4th value in this is 0.9, and there are 100 individuals between age 30 and 39 (the 4th age bin), then the 4th age bin will contribute 0.9*100 = 90 new seedlings
+
+mort_rates = c(0.8,          #0-9
+               0.4,          #10-19
+               0.3,        #20-29
+               0.2,        #30-39
+               0.1,        #40-49
+               0.1,        #50-59
+               0.3,        #60-69
+               0.5,        #70-79
+               0.7,        #80-89
+               1         #90-99
+               ) #fraction of the population in each age bin that DIES (not survivability)
+
+```
+
+```{r model setup}
+#initialize results matrix
+pops = data.frame(t(initialpops))
+colnames(pops) = c("0-9","10-19","20-29","30-39","40-49","50-59","60-69","70-79","80-89","90-99")
+pops[2:(t+1),]=0
+
+#initialize the age matrix
+age_matrix = matrix(nrow = 2, ncol = length(initialpops)) #only really need 2 rows:
+  #1st row is for fertility rates
+  #2nd row is for death rates
+  #the columns represent the age bins
+age_matrix[]  = 0
+age_matrix[1,] = fert_rates
+age_matrix[2,] = mort_rates
+```
+
+``` {r model loop}
+#for the desired time length:
+#for(i in 1:t) { #run 1 timestep of the model
+  #at the start of a timestep the survivability matrix is:
+  # Fertility row:  [whatever the fertility rate set above is]
+  # Death rows:     0 0 0 0 0
+  #                 0 0 0 0 0
+  #                 ...
+  
+  #we will need to reset the death rows to just the age-related death fractions
+  age_matrix[2,]=mort_rates
+  
+  #get the herbivore related deaths/rates [what should be returned is either:
+  #1. The fraction of trees that die - from herbivory only - in each age class for a single timestep, OR
+  #2. The NUMBER of trees that die - from herbivory only - in each age class for a SINGLE timestep
+  
+  
+  
+  #It would be ideal for this model to also return the new ACTUAL HERBIVORE POPULATION at the end of a single timestep,
+  #but if it returns something like herbivore deaths or death rate than that can be handled here too
+  
+  #I am assuming here that it returns the fraction that die of herbivory during the timestep as well as the growth and death numbers (not rates) for the herbivore population
+  #]
+
+  
+  
+  #get the SPEI value for use with the drought function
+  SPEI = 0.999 #for now a dummy value
+
+  #get the drought related deaths/rates [looks like it's a rate - % of standing dead trees, which I take to mean % of trees that DIE of drought at the timestep]
+  droughtmort = drought_function(SPEI) #this needs to be a value between 0 and 1 but it is not
+  
+  #temporary fudge factor to make it something between 0 and 1, so I can test
+  droughtmort = droughtmort / (droughtmort+1)
+  deathrow_update = matrix(nrow = 1, ncol = lpops)
+  for(i2 in 1:lpops){
+  deathrow_update[i2] = min(1,(age_matrix[2,i2] + droughtmort))
+  }
+  
+  
+  
+  #actually get the new pops values
+  newpops = matrix(nrow = 1, ncol = lpops)
+  for(i2 in 1:lpops){
+    #new pops is the !!!!!DO THIS IN THE DAYTIME WHEN YOU ARE AWAKE!
+    newpops[i2] = 0
+  }
+  
+#}
+
+
+```
