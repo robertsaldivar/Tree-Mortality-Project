@@ -17,7 +17,7 @@
 ## - entire canopy of individual tree is accessible to the herbivore at all times
 ## - herbivores are always present (at all time steps), they are not seasonal grazers
 ## - trees do not lose leaves seasonally, able to be eaten by herbivores at all time steps
-## - alpha values determined for each age class were based on biological understanding that younger
+## - alpha value determined for each age class were based on biological understanding that younger
 ##   individuals usually produce more palatable leaves (are more preferred by herbivores than 
 ##   older trees are)
 
@@ -65,7 +65,8 @@ grazingsubmodel = function(survivability, initialpop, nstep, alpha, herb_n, tree
 }
 
 
-
+## above shouldnt be over whole nstep time
+## output get mortality fraction/rate
 
 
 
@@ -73,21 +74,75 @@ grazingsubmodel = function(survivability, initialpop, nstep, alpha, herb_n, tree
 
 # 2. use equations that give total biomass (and total amount) of tree + herb populations
 
-# Alpha values for the effect of herbivores on trees and vice versa:
-alpha_herb = 
-alpha_tree = 
-
-grazingsubmodel = function(alpha_herb, alpha_tree, herb_n, tree_n, tree_K){
+grazingsubmodel = function(alpha, r, herb_n, tree_n, tree_K){
   
-  tree_nplus1 = tree_n * exp(r * (1 - (tree_n/tree_K)) - (alpha * herb_n)
+  # Number of time steps 
+  nstep = 100 # years
+  
+  # Need population values for age classes in a data frame
+  # Number of herbivores is the same regardless of the trees' age class. Assuming there is a 
+  # overall herbivore population of 100 individuals, we will divide them up evenly among the 10
+  # age classes so that 10 herbivores are present to eat any of the trees in any age class
+  population_df <- data.frame("age_class" = c(1:10), "tree_n" = c(), "herb_n" = c(10, 10, 10, 10,
+                                                                                  10, 10, 10, 10,
+                                                                                  10, 10))
+  
+  # We also need a biomass scaling data frame, which has age class-specific scaling factors. 
+  # For example, each individual in age class 1 has an average biomass (g C) of 10, etc. This 
+  # will help us convert between # of individuals and amount of biomass.
+  biomassscaling <- data.frame("age_class" = c(1:10), "scaling" = c(1/10, 1/20, 1/30, 1/40, 1/50,
+                                                                     1/60, 1/70, 1/80, 1/90, 1/100))
  
-  herbivore_nplus1 = tree_n * exp(r * (1 - (tree_n/tree_K))) * (1 - exp(-alpha * herb_n))
+  # Converting from population size to biomass
+  tree_n = population_df$population / biomassscaling$scaling
   
-  return(list(c(tree_nplus1, herbivore_nplus1)))
+
+  # Defining our other variables:
+  ## Alpha values represent "the total amount of the biomass that an herbivore consumes", 
+  ## essentially the "feeding rate" or effect of herbivores on trees. Because most full grown 
+  ## herbivores (deer) can likely eat the leaves of an entire individual in age classes 1 and 2, we
+  ## will assign the alpha value to be approximately 20 g C
+  alpha = 20
+  ## r is constant growth rate of total tree population
+  r = 0.03
+  ## tree_K is carrying capacity of total tree population
+  tree_K = 400
+  
+  # Create data frame to store results from for loop below
+  
+  output_df <- data.frame("year" = c(1:100), "tree_biomass_n1" = NA, "herbivore_biomass_n1" = NA)
+      
+  # Then apply the biomass equations to each age class
+  ## starts at 2 because we have to use the initial values of timestep 1 to calculate all
+  ## subsequent values
+  for (i in 2:nstep) {
+    
+  output_df$tree_biomass_n1[i] = tree_n[i] * exp(r * (1 - ((tree_n[i])/tree_K)) - (alpha * herb_n[i]))
+  
+  # tree_nplus1 = alpha[i] * herb_n * tree_n if we want number that died/mortality rate
+  
+  output_df$herbivore_biomass_n1[i] = tree_n[i] * exp(r * (1 - ((tree_n[i])/tree_K))) * (1 - exp(-alpha 
+  * herb_n[i]))
+  
+  }
+  
+  # Then convert total population biomass, for each age class, back into amount of individuals.
+  # Finally, convert number of individuals into "amount of individuals that died"
+  
+  for (i in 1:nstep) {
+    
+    tree_individuals = output_df$tree_biomass_n1[i] * biomassscaling$scaling[i]
+    
+    amount_died = tree_individuals[i+1] - tree_individuals[i]
+   
+    if(amount_died[i] >= 0) amount_died[i] = 0
+    if(amount_died[i] < 0) amount_died[i] = abs(amount_died[i])
+    
+  }
+
+  # tried to convert here from # of individuals in next time step to # that have died by calculating 
+  # the difference between the current class and the previous class. If it is a positive number,
+  # no net loss has occurred. If it is a negative number, a certain number of trees have died
+  
+  return(list(amount_died))
 }
-
-
-# NOTES: 
-# which format should the output of this submodel be? Would need to convert total biomass to 
-# contributions to the population sizes
-
