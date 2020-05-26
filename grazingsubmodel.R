@@ -1,15 +1,11 @@
 #' Grazing Submodel
 #' 
-#' @param t time (days)
 #' @param r growth rate of trees
 #' @param alpha alpha, effect between herbivores and trees
 #' @param tree_K trees carrying capacity
 #' @param tree_n number of trees from last timestep
 #' @param herb_n number of herbivores from last timestep
 
-
-# Two options for this submodel: 
-# 1. use equations that give survivability for each age class (factor in age class) for trees + herbs
 
 # The survivability equations below are based off equations from Kang et al. 2008 
 
@@ -20,56 +16,6 @@
 ## - alpha value determined for each age class were based on biological understanding that younger
 ##   individuals usually produce more palatable leaves (are more preferred by herbivores than 
 ##   older trees are)
-
-
-grazingsubmodel = function(survivability, initialpop, nstep, alpha, herb_n, trees_n) {
-  
-  # the number of age classes
-  nclasses = 10
-  
-  #initialize the Leslie matrix
-  leslie_matrix = matrix(nrow=nclasses, ncol=nclasses)
-  leslie_matrix[,] = 0.0
-  leslie_matrix[1,] = survivability
-  
-  for (i in 1:(nclasses-1)) {
-    leslie_matrix[i+1,i] = survivability[i]
-   
-     # survivability for trees
-    survivability_trees[i] = survivability[i] - (alpha_herb * herb_n)
-    
-    # survivability for herbivores
-    survivability_herbs[i] = survivability[i] - (alpha_tree * trees_n)
-    
-     }
-  leslie_matrix[nclasses,nclasses] = survivability[nclasses]
-  
-  # create matrices to store population structure
-  pop.structure_trees = matrix(nrow=nclasses, ncol=nstep)
-  
-  pop.structure_trees[,1] = initialpop
-  
-  
-  pop.structure_herbs = matrix(nrow=nclasses, ncol=nstep)
-  
-  pop.structure_herbs[,1] = initialpop
-  
-  
-  for (i in 2:nstep) {
-  
-    pop.structure_trees[,i] = leslie_matrix %*% pop.structure_trees[,i-1]
-    pop.structure_herbs[,i] = leslie_matrix %*% pop.structure_herbs[,i-1]
-  }
-  
-  return(list(c(pop.structure_trees, pop.structure_herbs)))
-}
-
-
-## above shouldnt be over whole nstep time
-## output get mortality fraction/rate
-
-
-
 
 
 # 2. use equations that give total biomass (and total amount) of tree + herb populations
@@ -83,7 +29,7 @@ grazingsubmodel = function(alpha, r, herb_n, tree_n, tree_K){
   # Number of herbivores is the same regardless of the trees' age class. Assuming there is a 
   # overall herbivore population of 100 individuals, we will divide them up evenly among the 10
   # age classes so that 10 herbivores are present to eat any of the trees in any age class
-  population_df <- data.frame("age_class" = c(1:10), "tree_n" = c(), "herb_n" = c(10, 10, 10, 10,
+  population_df <- data.frame("age_class" = c(1:10), "tree_n" = NA, "herb_n" = c(10, 10, 10, 10,
                                                                                   10, 10, 10, 10,
                                                                                   10, 10))
   
@@ -126,23 +72,32 @@ grazingsubmodel = function(alpha, r, herb_n, tree_n, tree_K){
   
   }
   
-  # Then convert total population biomass, for each age class, back into amount of individuals.
-  # Finally, convert number of individuals into "amount of individuals that died"
+  # Then convert total tree population biomass, for each age class, back into amount of individuals, at
+  # each time step. Finally, convert number of individuals into "amount of individuals that died"
   
-  for (i in 1:nstep) {
+  desired_length = 100
+  tree_individuals = vector(mode = "list", length = desired_length)
+  
+  amount_died = vector(mode = "list", length = desired_length)
+  
+  for (i in 2:nstep) {
     
-    tree_individuals = output_df$tree_biomass_n1[i] * biomassscaling$scaling[i]
+    tree_individuals[i] = output_df$tree_biomass_n1[i] * biomassscaling$scaling[i]
     
-    amount_died = tree_individuals[i+1] - tree_individuals[i]
-   
-    if(amount_died[i] >= 0) amount_died[i] = 0
-    if(amount_died[i] < 0) amount_died[i] = abs(amount_died[i])
+    amount_died[i] = c(0, diff(tree_individuals[i]))
     
-  }
-
+    if(amount_died[i] >= 0){
+      amount_died[i] = 0}
+    else{
+      if(amount_died[i] < 0){
+        amount_died[i] = abs(amount_died[i])
+      }
+    }
+    
   # tried to convert here from # of individuals in next time step to # that have died by calculating 
   # the difference between the current class and the previous class. If it is a positive number,
   # no net loss has occurred. If it is a negative number, a certain number of trees have died
   
-  return(list(amount_died))
+  return(list(amount_died)) 
+  }
 }
