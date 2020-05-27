@@ -18,7 +18,7 @@ library(SPEI)
 drought_function <- function(input_data, WD = 0.946, SLA = 7.39, coeff1 = -1.28, coeff2 = 0.38, coeff3 = -0.41) {
   
     
-    SPEI = SPEI::spei(data = input_data, scale = 24)
+    SPEI = SPEI::spei(data = input_data, scale = 12)
     
     SPEI = as.data.frame(SPEI$fitted)
     
