@@ -45,3 +45,4 @@ return(list(c(pop.structure_trees, pop.structure_herbs)))
 
 ## above shouldnt be over whole nstep time
 ## output get mortality fraction/rate
+
