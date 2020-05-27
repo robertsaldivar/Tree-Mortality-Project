@@ -13,9 +13,8 @@
 ## - entire canopy of individual tree is accessible to the herbivore at all times
 ## - herbivores are always present (at all time steps), they are not seasonal grazers
 ## - trees do not lose leaves seasonally, able to be eaten by herbivores at all time steps
-## - alpha value determined for each age class were based on biological understanding that younger
-##   individuals usually produce more palatable leaves (are more preferred by herbivores than 
-##   older trees are)
+## - alpha value determined based on biological understanding of relationship between 
+##   herbivores (deer in this case) and trees (oaks in this case)
 
 
 # 2. use equations that give total biomass (and total amount) of tree + herb populations
