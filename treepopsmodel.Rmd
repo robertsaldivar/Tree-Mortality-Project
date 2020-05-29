@@ -8,13 +8,17 @@ output: html_document
 # Model of tree population (by age class) over time
 
 ```{r setup, include=FALSE}
+library(SPEI)
 #source("age_fxns.R") #get the age growth and mortality functions - currently not actually needed!
 source("Drought.R") #get the drought functions
+source("grazingsubmodel.R")
 ```
 
 ```{r model inputs}
 ###ENTER THE DESIRED INPUTS HERE
-t = 100 #the length of time (in years) for the model to run
+t = 54 #the length of time (in years) for the model to run
+timestep = 2 #the number of years per timestep
+
 initialpops = c(1000,200,188,170,153,120,80,37,15,6) #pops in each age bin (age bins are 0-9,10-19,20-29, etc, with last being 90-99)
 lpops = length(initialpops) #the NUMBER of different age bins
 initialherbpops = 800 #total population of herbivores at start
@@ -41,6 +45,20 @@ mort_rates = c(0.8,          #0-9
                0.7,        #80-89
                1         #90-99
                ) #fraction of the population in each age bin that DIES (not survivability)
+
+
+
+###For drought calculation: needs precipitation data in MONTHS for the entire time range AND the [timestep] years prior to the start of that range
+#the FIRST value in this (i.e. index = 1) should be from [timestep] years before the intended start time
+
+#by default we'll use the testing data available from the SPEI library
+data(balance)
+PMinusPET = balance$tampa
+#there isn't enough data by default for 100 years
+
+
+###For grazing calculation: needs the INITIAL herbivore BIOMASS
+herb_n = 200
 ```
 
 ```{r model setup}
@@ -56,6 +74,10 @@ age_matrix = matrix(nrow = 2, ncol = length(initialpops)) #only really need 2 ro
 age_matrix[]  = 0
 age_matrix[1,] = fert_rates
 age_matrix[2,] = mort_rates
+```
+
+```{r test grazing submodel}
+test = grazingsubmodel(herb_n,pops[1,]) #it 'works' but amount lost is higher than the population for the default values 
 ```
 
 ``` {r model loop}
@@ -82,32 +104,63 @@ for(i in 1:t) { #run 1 timestep of the model
   #I am assuming here that it returns the fraction that die of herbivory during the timestep as well as the growth and death numbers (not rates) for the herbivore population
   #]
   
+  grazingoutput = grazingsubmodel(herb_n,pops[i,])
+  herb_n = grazingoutput[[2]]
+  g_mort = grazingoutput[[1]]
   
-  #get the SPEI value for use with the drought function
-  SPEI = 0.00000999 #for now a dummy value
+  ######Drought related mortality
+  ###FOR ME: get JUST THE MOST RECENT 24 MONTHS of P minus PET
+  #each +1 to i is +12 to the drought index we want
+  #on 1st timestep we want from 1 to 12, which is i to 12i
+  #on 2nd timestep we want from 13 to 24, which is 12(i-1)+1 to 12i
+  
+  
+  startindex = 12*timestep*(i-1)+1
+  endindex = 12*timestep*i
+  d_input = PMinusPET[startindex:endindex]
+  
+
   #get the drought related deaths/rates [looks like it's a rate - % of standing dead trees, which I take to mean % of trees that DIE of drought at the timestep]
-  droughtmort = drought_function(SPEI) #this needs to be a value between 0 and 1 but it is not
+  dm_temp = drought_function(d_input) #this needs to be a value between 0 and 1 but it is not
+  droughtmort = dm_temp[12,]
   
-  #temporary fudge factor to make it something between 0 and 1, so I can test
-  droughtmort = droughtmort / (droughtmort+1)
+  
   deathrow_update = matrix(nrow = 1, ncol = lpops)
   for(i2 in 1:lpops){
   deathrow_update[i2] = min(1,(age_matrix[2,i2] + droughtmort))
   }
   
-  #at this point we can safely convert the age matrix to a survivability matrix
-  age_matrix[2,]=(1-age_matrix[2,]) #these are now the fraction that survive, from all causes
   
-  #actually get the new pops values
-  newpops = matrix(nrow = 1, ncol = lpops)
+  #get the dpops value
+  dpops = matrix(nrow = 1, ncol = lpops)
+  dpops[1,]=0
+  
+  newpops = dpops
+  prevbinageup = 0
+  currentbinageup = 0
   for(i2 in 1:lpops){
+    #for ANY bin, get the deaths during the timestep:
+      dpops[i2] =  g_mort[[i2]]-age_matrix[2,i2]*pops[i,i2]
+         #herbivory deaths [returned as a negative number already]
+         #the fraction of the bin's pops that died due to drought and other causes
+         
+    #of the survivors, 1/10*timestep will advance to the next age bin
+    currentbinageup = 0.1*timestep*pops[i,i2]-dpops[i2]
     
+    
+    #components that differ between the seedling bin and the other bins  
     if(i2 == 1){ #if we are doing the seedlings, add up all the seedling production from each age range
-      newpops[i2]=max(0,sum(pops[i,]*age_matrix[1,])) #pops cannot be less than zero
-    } else{ # otherwise, new pops is the amount that survived from the next lowest age range
-      newpops[i2] = max(0,pops[i,i2]*age_matrix[2,(i2-1)]) #pops cannot be less than 0
+      newseedlings = sum(pops[i,i2]*age_matrix[1,])
+      dpops[i2] = dpops[i2] +  newseedlings - currentbinageup
+      
+    } else{ #otherwise, add in age up from prior age bin
+      dpops[i2] = dpops[i2]+prevbinageup - currentbinageup
     }
+    #at this point we can assign the current bin ageup amount to the prev bin value for use on the next iteration
+    prevbinageup = currentbinageup
     
+    #now that we have the change, get the new pops in the bin (capped at minimum of 0) 
+    newpops[i2] = max(0,(pops[i,i2]+dpops[i2]))
     
   }
   
@@ -115,4 +168,12 @@ for(i in 1:t) { #run 1 timestep of the model
   pops[i+1,] = newpops
   
 }
+
+
+#Add in something for visualization of the model
+```
+
+```{r visualize results}
+
+
 ```
