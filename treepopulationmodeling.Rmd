@@ -17,20 +17,13 @@ knitr::opts_chunk$set(echo = TRUE)
 source("grazingsubmodel.R")
 
 # these will be present in Trevor's markdown
-herb_n_new = 10
-tree_n_new = 100
-initial_n = c(herb_n_new, tree_n_new)
-years = seq(from=1, to=100, by=1)
+tree_n = 50
+  
+herb_n = 10
+  
 
+grazingsubmodel(r=0.7, herb_n, tree_n, tree_K=2000, biomassscaling, alphascaling)
 
-#should use sapply or another apply function? or ode()?
-grazingresults = sapply(years, grazingsubmodel, initial_n)
-
-# Store in data frame
-Ptime = data.frame(G=grazingresults, years=years)
-
-# Plot results
-ggplot(grazingresults, aes(years,G))+geom_point()+labs(x="years",y="Grazing Results")
 
 
 ```

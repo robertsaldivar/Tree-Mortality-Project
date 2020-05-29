@@ -46,3 +46,9 @@ return(list(c(pop.structure_trees, pop.structure_herbs)))
 ## above shouldnt be over whole nstep time
 ## output get mortality fraction/rate
 
+
+desired_length = 100
+tree_individuals = vector(mode = "list", length = desired_length)
+
+amount_died = vector(mode = "list", length = desired_length)
+
