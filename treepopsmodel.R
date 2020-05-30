@@ -1,52 +1,19 @@
----
-title: "tree pops model"
-author: "Trevor L Romich"
-date: "5/21/2020"
-output: html_document
----
 
 # Model of tree population (by age class) over time
 
-```{r setup, include=FALSE}
+
 library(SPEI)
 library(tidyverse)
 #source("age_fxns.R") #get the age growth and mortality functions - currently not actually needed!
 source("Drought2.R") #get the drought functions
 source("grazingsubmodel.R")
-```
 
-```{r model inputs}
+treepopsmodel = function(t = 54, timestep = 1, initialpops = c(1000,200,188,170,153,120,80,37,15,6),herb_n = 200,WD,SLA,coeff1,coeff2,coeff3){
 ###ENTER THE DESIRED INPUTS HERE
-t = 54 #the length of time (in years) for the model to run
-timestep = 2 #the number of years per timestep
 
-initialpops = c(1000,200,188,170,153,120,80,37,15,6) #pops in each age bin (age bins are 0-9,10-19,20-29, etc, with last being 90-99)
+ #pops in each age bin (age bins are 0-9,10-19,20-29, etc, with last being 90-99)
 lpops = length(initialpops) #the NUMBER of different age bins
-initialherbpops = 800 #total population of herbivores at start
-fert_rates = c(0,          #0-9
-               0,          #10-19
-               0.5,        #20-29
-               0.5,        #30-39
-               0.5,        #40-49
-               0.5,        #50-59
-               0.5,        #60-69
-               0.5,        #70-79
-               0.5,        #80-89
-               0.5         #90-99
-               ) #fraction of the population in each age bin that is added to the first age bin as new seedlings
-#example: if the 4th value in this is 0.9, and there are 100 individuals between age 30 and 39 (the 4th age bin), then the 4th age bin will contribute 0.9*100 = 90 new seedlings
-mort_rates = c(0.8,          #0-9
-               0.4,          #10-19
-               0.3,        #20-29
-               0.2,        #30-39
-               0.1,        #40-49
-               0.1,        #50-59
-               0.3,        #60-69
-               0.5,        #70-79
-               0.7,        #80-89
-               1         #90-99
-               ) #fraction of the population in each age bin that DIES (not survivability)
-
+ #total population of herbivores at start
 
 
 ###For drought calculation: needs precipitation data in MONTHS for the entire time range AND the [timestep] years prior to the start of that range
@@ -63,7 +30,7 @@ PMinusPET = balance$tampa
 
 
 ###For grazing calculation: needs the INITIAL herbivore POPULATION COUNT
-herb_n = 200
+
 
 ####Written by Kaili:
 # biomass scaling data frame
@@ -83,9 +50,6 @@ herb_n = 200
                                                                 0.05, 0.04, 0.03, 0.01))
 ###^Written by Kaili  
 
-```
-
-```{r model setup}
 #initialize results matrix
 pops = data.frame(t(initialpops))
 colnames(pops) = c("0-9","10-19","20-29","30-39","40-49","50-59","60-69","70-79","80-89","90-99")
@@ -98,13 +62,6 @@ pops[2:(t+1),]=0
 #age_matrix[]  = 0
 #age_matrix[1,] = fert_rates
 #age_matrix[2,] = mort_rates
-```
-
-```{r test grazing submodel}
-test = grazingsubmodel(herb_n = herb_n,tree_n = pops[1,],biomassscaling = biomassscaling, alphascaling = alphascaling) #it 'works' but amount lost is higher than the population for the default values 
-```
-
-``` {r model loop}
 #for the desired time length:
 for(i in 1:t) { #run 1 timestep of the model
   #at the start of a timestep the survivability matrix is:
@@ -136,7 +93,7 @@ for(i in 1:t) { #run 1 timestep of the model
   
 
   #get the drought related deaths/rates [looks like it's a rate - % of standing dead trees, which I take to mean % of trees that DIE of drought at the timestep]
-  dm_temp = drought_function(d_input) #this is currently broken - I half expect something happened with the library
+  dm_temp = drought_function(d_input, WD = WD, SLA = SLA, coeff1 = coeff1, coeff2 = coeff2, coeff3 = coeff3 ) #this is currently broken - I half expect something happened with the library
   droughtmort = dm_temp[12*timestep,]*pops[i,]
   
   newpops = newpops_g - droughtmort
@@ -186,20 +143,4 @@ for(i in 1:t) { #run 1 timestep of the model
   pops[i+1,] = newpops
   
 }
-
-
-#Add in something for visualization of the model
-```
-
-```{r visualize results}
-#add the time in:
-time_ = seq(from = 0, to = t)*timestep
-pops2 = cbind.data.frame(pops,time_)
-#"0-9","10-19","20-29","30-39","40-49","50-59","60-69","70-79","80-89","90-99"
-colnames(pops2) = c(1,2,3,4,5,6,7,8,9,10,"time")
-
-#plot results vs time
-pops_display = pops2 %>% gather(key = "age_range",value = "population",-time)
-
-ggplot(data = pops_display, aes(time, population, fill = age_range))+geom_col()+labs(x = "time in years", title = "Tree population size over time")
-```
+}

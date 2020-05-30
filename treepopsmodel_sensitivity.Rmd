@@ -1,0 +1,56 @@
+---
+title: "tree pops model sensitivity analysis"
+author: "Trevor L Romich"
+date: "5/29/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(sensitivity)
+
+source("treepopsmodel.R")
+```
+
+```{r sensitivity}
+#do a sobol sensitivity analysis
+
+
+count = 100
+
+#test the parameters from the drought submodel
+p = c(WD = 0.946, SLA = 7.39, coeff1 = -1.28, coeff2 = 0.38, coeff3 = -0.41)
+sdvar = 0.1 #makes the SD equal to this times the value of the mean
+
+#get first test
+p1_test = rnorm(n = count, mean = p[1], sd = abs(sdvar*p[1]))
+p2_test = rnorm(n = count, mean = p[2], sd = abs(sdvar*p[2]))
+p3_test = rnorm(n = count, mean = p[3], sd = abs(sdvar*p[3]))
+p4_test = rnorm(n = count, mean = p[4], sd = abs(sdvar*p[4]))
+p5_test = rnorm(n = count, mean = p[5], sd = abs(sdvar*p[5]))
+
+test1 = cbind.data.frame(p1_test,p2_test,p3_test,p4_test,p5_test)
+
+#get 2nd test
+
+p1_test = rnorm(n = count, mean = p[1], sd = abs(sdvar*p[1]))
+p2_test = rnorm(n = count, mean = p[2], sd = abs(sdvar*p[2]))
+p3_test = rnorm(n = count, mean = p[3], sd = abs(sdvar*p[3]))
+p4_test = rnorm(n = count, mean = p[4], sd = abs(sdvar*p[4]))
+p5_test = rnorm(n = count, mean = p[5], sd = abs(sdvar*p[5]))
+
+test2 = cbind.data.frame(p1_test,p2_test,p3_test,p4_test,p5_test)
+
+soboltest = sobol2007(X1 = test1, X2 = test2, nboot = 100)
+
+results = mapply(FUN = treepopsmodel,WD = soboltest$X$p1_test,SLA = soboltest$X$p2_test,coeff1 = soboltest$X$p3_test,
+                 coeff2 = soboltest$X$p4_test,coeff3 = soboltest$X$p5_test)
+
+soboltest = sensitivity::tell(soboltest,results,res.names="population")
+
+
+```
+
+
