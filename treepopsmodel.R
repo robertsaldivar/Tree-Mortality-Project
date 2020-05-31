@@ -8,7 +8,7 @@ library(tidyverse)
 source("Drought2.R") #get the drought functions
 source("grazingsubmodel.R")
 
-treepopsmodel = function(t = 54, timestep = 1, initialpops = c(1000,200,188,170,153,120,80,37,15,6),herb_n = 200,WD,SLA,coeff1,coeff2,coeff3){
+treepopsmodel = function(t = 44, timestep = 1, initialpops = c(1000,200,188,170,153,120,80,37,15,6),herb_n = 200,WD,SLA,coeff1,coeff2,coeff3){
 ###ENTER THE DESIRED INPUTS HERE
 
  #pops in each age bin (age bins are 0-9,10-19,20-29, etc, with last being 90-99)
@@ -89,7 +89,7 @@ for(i in 1:t) { #run 1 timestep of the model
   
   startindex = 12*(i-1)+1
   endindex = 12*i
-  d_input = PMinusPET[startindex:endindex]
+  d_input = PMinusPET[startindex:(endindex+100)]
   
 
   #get the drought related deaths/rates [looks like it's a rate - % of standing dead trees, which I take to mean % of trees that DIE of drought at the timestep]

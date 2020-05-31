@@ -55,7 +55,7 @@ grazingsubmodel = function(r=0.7, herb_n, tree_n, tree_K=2000, biomassscaling, a
   
   #in other words, it's accounting for the natural growth rate of the same [herb_n] herbivores ten different times
   
-  #for now we'll go with it though, and treat the herbivore biomamss as the sume of this value
+  #for now we'll go with it though, and treat the herbivore biomamss as the sum of this value
   herbivore_biomass_n1 = tree_biomass * exp(r * (1 - ((tree_biomass)/tree_K))) * (1 - exp(-alphascaling$alpha 
                                                                                           * herb_biomass/tree_K))
   
