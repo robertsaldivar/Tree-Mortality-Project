@@ -91,14 +91,21 @@ for(i in 1:t) { #run 1 timestep of the model
   endindex = 12*i
   d_input = PMinusPET[startindex:(endindex+100)]
   
-
+  
   #get the drought related deaths/rates [looks like it's a rate - % of standing dead trees, which I take to mean % of trees that DIE of drought at the timestep]
-  dm_temp = drought_function(d_input, WD = WD, SLA = SLA, coeff1 = coeff1, coeff2 = coeff2, coeff3 = coeff3 ) #this is currently broken - I half expect something happened with the library
-  droughtmort = dm_temp[12*timestep,]*pops[i,]
+  dm_temp = drought_function(d_input) #this is currently broken - I half expect something happened with the library
+  
+  droughtmort = dm_temp[12*timestep,]*pops[i,] #if drought mortality % is over 100% for some reason, set it to 100%
+  
   
   newpops = newpops_g - droughtmort
-  
-  
+  #no newpops bin can be less than 0
+  for(i2 in 1:length(newpops)){
+    if(newpops[i2] < 0){
+      newpops[i2] = 0
+    }
+    
+  }
   
   #deathrow_update = matrix(nrow = 1, ncol = lpops)
   #for(i2 in 1:lpops){
@@ -114,33 +121,57 @@ for(i in 1:t) { #run 1 timestep of the model
   #prevbinageup = 0
   #currentbinageup = 0
   #for(i2 in 1:lpops){
-    #for ANY bin, get the deaths during the timestep:
+  #for ANY bin, get the deaths during the timestep:
   #    dpops[i2] =  g_mort[[i2]]-age_matrix[2,i2]*pops[i,i2]
-         #herbivory deaths [returned as a negative number already]
-         #the fraction of the bin's pops that died due to drought and other causes
-         
-    #of the survivors, 1/10*timestep will advance to the next age bin
-    #currentbinageup = 0.1*timestep*pops[i,i2]-dpops[i2]
-    
-    
-    #components that differ between the seedling bin and the other bins  
-    #if(i2 == 1){ #if we are doing the seedlings, add up all the seedling production from each age range
-    #  newseedlings = sum(pops[i,i2]*age_matrix[1,])
-    #  dpops[i2] = dpops[i2] +  newseedlings - currentbinageup
-      
-    #} else{ #otherwise, add in age up from prior age bin
-    #  dpops[i2] = dpops[i2]+prevbinageup - currentbinageup
-    #}
-    #at this point we can assign the current bin ageup amount to the prev bin value for use on the next iteration
-    #prevbinageup = currentbinageup
-    
-    #now that we have the change, get the new pops in the bin (capped at minimum of 0) 
-    #newpops[i2] = max(0,(pops[i,i2]+dpops[i2]))
-    
+  #herbivory deaths [returned as a negative number already]
+  #the fraction of the bin's pops that died due to drought and other causes
+  
+  #of the survivors, 1/10*timestep will advance to the next age bin
+  #currentbinageup = 0.1*timestep*pops[i,i2]-dpops[i2]
+  
+  
+  #components that differ between the seedling bin and the other bins  
+  #if(i2 == 1){ #if we are doing the seedlings, add up all the seedling production from each age range
+  #  newseedlings = sum(pops[i,i2]*age_matrix[1,])
+  #  dpops[i2] = dpops[i2] +  newseedlings - currentbinageup
+  
+  #} else{ #otherwise, add in age up from prior age bin
+  #  dpops[i2] = dpops[i2]+prevbinageup - currentbinageup
+  #}
+  #at this point we can assign the current bin ageup amount to the prev bin value for use on the next iteration
+  #prevbinageup = currentbinageup
+  
+  #now that we have the change, get the new pops in the bin (capped at minimum of 0) 
+  #newpops[i2] = max(0,(pops[i,i2]+dpops[i2]))
+  
   #}
   
   #add this to the next row in pops
-  pops[i+1,] = newpops
+  pops[(i+1),] = newpops
   
 }
+
+#what we actually want is to return a single number or a series of numbers
+
+#if the trees do NOT survive to the end:
+survived_to = 0
+if(sum(pops[length(pops),]) == 0) {
+  #then we want to know the last year in which there were living trees
+  i = length(pops)
+  survivors = 0
+  while(survivors == 0){
+    survivors = sum(pops[i,])
+    i = i-1
+  }
+  survived_to = i
+  #and the surviving tree pops is zero:
+  survivors = 0
+} else{ #otherwise,
+  #the trees survived to length(pops)
+  survived_to = length(pops)
+  #and the surviving tree pops is the sum of the age bins
+  survivors = sum(pops[length(pops),])
+}
+
+return(list(survived_to,survivors))
 }

@@ -22,7 +22,6 @@ timestep = 1 #the number of years per timestep
 
 initialpops = c(1000,200,188,170,153,120,80,37,15,6) #pops in each age bin (age bins are 0-9,10-19,20-29, etc, with last being 90-99)
 lpops = length(initialpops) #the NUMBER of different age bins
-initialherbpops = 800 #total population of herbivores at start
 fert_rates = c(0,          #0-9
                0,          #10-19
                0.5,        #20-29
@@ -137,11 +136,18 @@ for(i in 1:t) { #run 1 timestep of the model
 
   #get the drought related deaths/rates [looks like it's a rate - % of standing dead trees, which I take to mean % of trees that DIE of drought at the timestep]
   dm_temp = drought_function(d_input) #this is currently broken - I half expect something happened with the library
-  droughtmort = dm_temp[12*timestep,]*pops[i,]
+  
+  droughtmort = dm_temp[12*timestep,]*pops[i,] #if drought mortality % is over 100% for some reason, set it to 100%
+  
   
   newpops = newpops_g - droughtmort
-  
-  
+  #no newpops bin can be less than 0
+  for(i2 in 1:length(newpops)){
+    if(newpops[i2] < 0){
+      newpops[i2] = 0
+    }
+    
+  }
   
   #deathrow_update = matrix(nrow = 1, ncol = lpops)
   #for(i2 in 1:lpops){
@@ -183,7 +189,7 @@ for(i in 1:t) { #run 1 timestep of the model
   #}
   
   #add this to the next row in pops
-  pops[i+1,] = newpops
+  pops[(i+1),] = newpops
   
 }
 

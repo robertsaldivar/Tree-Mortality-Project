@@ -21,34 +21,44 @@ source("treepopsmodel.R")
 count = 100
 
 #test the parameters from the drought submodel
+
+###FOR ME TO DO: change to only do the test on the first 2: wood density and SLA
 p = c(WD = 0.946, SLA = 7.39, coeff1 = -1.28, coeff2 = 0.38, coeff3 = -0.41)
 sdvar = 0.1 #makes the SD equal to this times the value of the mean
 
 #get first test
 p1_test = rnorm(n = count, mean = p[1], sd = abs(sdvar*p[1]))
 p2_test = rnorm(n = count, mean = p[2], sd = abs(sdvar*p[2]))
-p3_test = rnorm(n = count, mean = p[3], sd = abs(sdvar*p[3]))
-p4_test = rnorm(n = count, mean = p[4], sd = abs(sdvar*p[4]))
-p5_test = rnorm(n = count, mean = p[5], sd = abs(sdvar*p[5]))
+#p3_test = rnorm(n = count, mean = p[3], sd = abs(sdvar*p[3]))
+#p4_test = rnorm(n = count, mean = p[4], sd = abs(sdvar*p[4]))
+#p5_test = rnorm(n = count, mean = p[5], sd = abs(sdvar*p[5]))
 
-test1 = cbind.data.frame(p1_test,p2_test,p3_test,p4_test,p5_test)
+test1 = cbind.data.frame(p1_test,p2_test)#,p3_test,p4_test,p5_test)
 
 #get 2nd test
 
 p1_test = rnorm(n = count, mean = p[1], sd = abs(sdvar*p[1]))
 p2_test = rnorm(n = count, mean = p[2], sd = abs(sdvar*p[2]))
-p3_test = rnorm(n = count, mean = p[3], sd = abs(sdvar*p[3]))
-p4_test = rnorm(n = count, mean = p[4], sd = abs(sdvar*p[4]))
-p5_test = rnorm(n = count, mean = p[5], sd = abs(sdvar*p[5]))
+#p3_test = rnorm(n = count, mean = p[3], sd = abs(sdvar*p[3]))
+#p4_test = rnorm(n = count, mean = p[4], sd = abs(sdvar*p[4]))
+#p5_test = rnorm(n = count, mean = p[5], sd = abs(sdvar*p[5]))
 
-test2 = cbind.data.frame(p1_test,p2_test,p3_test,p4_test,p5_test)
+test2 = cbind.data.frame(p1_test,p2_test)#,p3_test,p4_test,p5_test)
 
 soboltest = sobol2007(X1 = test1, X2 = test2, nboot = 100)
 
-results = mapply(FUN = treepopsmodel,WD = soboltest$X$p1_test,SLA = soboltest$X$p2_test,coeff1 = soboltest$X$p3_test,
-                 coeff2 = soboltest$X$p4_test,coeff3 = soboltest$X$p5_test)
 
-soboltest = sensitivity::tell(soboltest,results,res.names="population")
+#this part functions - as far as I can tell, properly.
+#regardless of the input all trees are dead by the 8th timestep though.
+results = mapply(FUN = treepopsmodel,WD = soboltest$X$p1_test,SLA = soboltest$X$p2_test)#,coeff1 = soboltest$X$p3_test,
+                 #coeff2 = soboltest$X$p4_test,coeff3 = soboltest$X$p5_test)
+
+
+
+#treepopsmodel.R assesses the model based on: 1. the year to which the trees survived and 2. the number that survived to the end of the dataset
+results = as.data.frame(matrix(unlist(results), ncol = 2, byrow = T))
+colnames(results) = c("survivaltime","survivors")
+soboltest = sensitivity::tell(soboltest,results,res.names=c("survivaltime","survivors")) #this seems to have the exact same input format as the version used in lecture, but returns an error of "is.atomic(x) is not TRUE," whic seems to be a problem that's fairly deep in the code being called.
 
 
 ```
