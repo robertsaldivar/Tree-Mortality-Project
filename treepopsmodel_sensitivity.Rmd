@@ -24,7 +24,7 @@ count = 100
 
 ###FOR ME TO DO: change to only do the test on the first 2: wood density and SLA
 p = c(WD = 0.946, SLA = 7.39, coeff1 = -1.28, coeff2 = 0.38, coeff3 = -0.41)
-sdvar = 0.1 #makes the SD equal to this times the value of the mean
+sdvar = 0.5 #makes the SD equal to this times the value of the mean
 
 #get first test
 p1_test = rnorm(n = count, mean = p[1], sd = abs(sdvar*p[1]))

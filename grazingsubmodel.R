@@ -18,12 +18,12 @@
 
 # 2. use equations that give total biomass (and total amount) of tree + herb populations
 
-grazingsubmodel = function(r=0.7, herb_n, tree_n, tree_K=2000, biomassscaling, alphascaling){
-
-###leftover from testing
-#r=0.7
-#tree_K=2000
-###  
+grazingsubmodel = function(r=0.7, herb_n, tree_n, tree_K=200000, biomassscaling, alphascaling,alpha2 = 0.2, herbcc = 400){
+  
+  ###leftover from testing
+  #r=0.7
+  #tree_K=2000
+  ###  
   # Need population values for age classes in a data frame
   
   
@@ -47,7 +47,7 @@ grazingsubmodel = function(r=0.7, herb_n, tree_n, tree_K=2000, biomassscaling, a
   #xn+1 = 
   
   
-  tree_biomass_n1 = tree_biomass*exp(r*(1-tree_biomass/tree_K)-alphascaling$alpha*(herb_biomass/tree_K)) #there was an /tree_K missing in the herbivore biomass part
+  tree_biomass_n1 = tree_biomass*exp(r*(1-tree_biomass/tree_K)-alphascaling$alpha*(herb_biomass)) 
   
   #conceptually this is not doing what we want it to. It is changing the herbivore biomass by including the herbivory AND
   #natural growth rate for EACH 'age bin' of herbivores, even though there aren't any age bins of herbivores, just 10 different
@@ -56,8 +56,10 @@ grazingsubmodel = function(r=0.7, herb_n, tree_n, tree_K=2000, biomassscaling, a
   #in other words, it's accounting for the natural growth rate of the same [herb_n] herbivores ten different times
   
   #for now we'll go with it though, and treat the herbivore biomamss as the sum of this value
-  herbivore_biomass_n1 = tree_biomass * exp(r * (1 - ((tree_biomass)/tree_K))) * (1 - exp(-alphascaling$alpha 
-                                                                                          * herb_biomass/tree_K))
+  herbivore_biomass_n1 = alpha2*sum(tree_biomass) * exp(r * (1 - (sum(tree_biomass)/tree_K)))
+  if (herbivore_biomass_n1 > herbcc) {
+    herbivore_biomass_n1 = herbcc
+  }                                                
   
   
   # Then convert total tree population biomass, for each age class, back into amount of individuals, at
