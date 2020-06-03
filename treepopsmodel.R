@@ -8,7 +8,7 @@ library(tidyverse)
 source("Drought2.R") #get the drought functions
 source("grazingsubmodel.R")
 
-treepopsmodel = function(t = 44, timestep = 1, initialpops = c(1000,200,188,170,153,120,80,37,15,6),herb_n = 200,WD,SLA,coeff1,coeff2,coeff3){
+treepopsmodel = function(t = 44, timestep = 1, initialpops = c(1000,200,188,170,153,120,80,37,15,6),herb_n = 100,WD,SLA,coeff1,coeff2,coeff3){
 ###ENTER THE DESIRED INPUTS HERE
 
  #pops in each age bin (age bins are 0-9,10-19,20-29, etc, with last being 90-99)
