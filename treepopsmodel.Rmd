@@ -17,7 +17,7 @@ source("grazingsubmodel.R")
 
 ```{r model inputs}
 ###ENTER THE DESIRED INPUTS HERE
-t = 9 #the length of time (in years) for the model to run
+t = 99 #the length of time (in years) for the model to run
 timestep = 1 #the number of years per timestep
 initialpops = c(1000,200,188,170,153,120,80,37,15,6) #pops in each age bin (age bins are 0-9,10-19,20-29, etc, with last being 90-99)
 lpops = length(initialpops) #the NUMBER of different age bins
@@ -122,9 +122,11 @@ for(i in 1:t) { #run 1 timestep of the model
   
   #get the drought related deaths/rates [looks like it's a rate - % of standing dead trees, which I take to mean % of trees that DIE of drought at the timestep]
   dm_temp = drought_function(d_input) #this is currently broken - I half expect something happened with the library
-  if(dm_temp[12,]>1){
-    dm_temp[12,]=1
+  if(dm_temp[12,]>0.99){
+    dm_temp[12,]=0.99
   }
+  
+  
   droughtmort = dm_temp[12*timestep,]*pops[i,] #if drought mortality % is over 100% for some reason, set it to 100%
   
   
@@ -185,11 +187,48 @@ for(i in 1:t) { #run 1 timestep of the model
 
 ```{r visualize results}
 #add the time in:
+getplottable_n = function(pops,t = 99,timestep = 1){
 time_ = seq(from = 0, to = t)*timestep
 pops2 = cbind.data.frame(pops,time_)
 #"0-9","10-19","20-29","30-39","40-49","50-59","60-69","70-79","80-89","90-99"
 colnames(pops2) = c(1,2,3,4,5,6,7,8,9,10,"time")
 #plot results vs time
 pops_display = pops2 %>% gather(key = "age_range",value = "population",-time)
-ggplot(data = pops_display, aes(time, population, fill = age_range))+geom_col()+labs(x = "time in years", title = "Tree population size over time")
+p1 = ggplot(data = pops_display, aes(time, population, fill = age_range))+geom_col()+labs(x = "time in years", title = "Tree population size over time")
+show(p1)
+}
+getplottable_n(pops)
+```
+
+```{r compare}
+#compare with the function version - for same inputs, the diff between the pops data should always be zero
+source("treepopsmodel.R")
+pops_func = treepopsmodel(return_only_pops = TRUE)
+sum(pops-pops_func)
+```
+
+```{r function testing}
+#test the function version
+results_test = treepopsmodel()
+results_test2 = treepopsmodel(WD = 0.8)
+```
+
+```{r moredrought}
+#run the model again with more drought conditions
+pops_moredrought = treepopsmodel(return_only_pops = TRUE,drought_increase = 2)
+#check if there was an actual difference
+sum(pops-pops_moredrought)
+getplottable_n(pops_moredrought)
+#CURRENTLY THE CLIMATE DATA SEEMS TO MAKE VIRTUALLY NO DIFFERENCE - is it interested in the CHANGE IN the values in balance? If so, adding the same number to everything in it would not do anything
+#It does not seem to care about increasing the magnitude of everything either - I multiplied all values by 2, and the result is EXACTLY the same
+#Without knowing what it is actually doing I can't figure out what modification to make to the input data in order to represent a more severe drought.
+```
+
+```{r moreherbivores}
+#run the model again with more herbivores
+pops_moreherbs = treepopsmodel(return_only_pops = TRUE,herb_n = 10000)
+sum(pops-pops_moreherbs)
+pops-pops_moreherbs
+getplottable_n(pops_moreherbs)
+#it LOOKS LIKE this causes the total pops across all timesteps to get lower, but that the difference becomes negligible the longer the model runs for - I can make the code do some 'nicer' analysis to confirm (or deny) this later on
 ```

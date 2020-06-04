@@ -7,7 +7,7 @@ library(tidyverse)
 source("Drought2.R") #get the drought functions
 source("grazingsubmodel.R")
 
-treepopsmodel = function(t = 44, timestep = 1, initialpops = c(1000,200,188,170,153,120,80,37,15,6),herb_n = 200,WD,SLA,coeff1,coeff2,coeff3){
+treepopsmodel = function(return_only_pops = FALSE, t = 99, timestep = 1, initialpops = c(1000,200,188,170,153,120,80,37,15,6),herb_n = 200,WD=0.946,SLA=7.39,coeff1=-1.28,coeff2=0.38,coeff3=-0.41,drought_increase = 0, PMinusPET= balance$tampa){
   ###ENTER THE DESIRED INPUTS HERE
   
   #pops in each age bin (age bins are 0-9,10-19,20-29, etc, with last being 90-99)
@@ -20,7 +20,8 @@ treepopsmodel = function(t = 44, timestep = 1, initialpops = c(1000,200,188,170,
   
   #by default we'll use the testing data available from the SPEI library
   data(balance)
-  PMinusPET = balance$tampa
+  #PMinusPET = balance$tampa
+  #PMinusPET = PMinusPET*drought_increase #CURRENTLY NOT USING until we know what change to make
   #there isn't enough data by default for 100 years
   
   
@@ -45,8 +46,8 @@ treepopsmodel = function(t = 44, timestep = 1, initialpops = c(1000,200,188,170,
   ## class. Because most full grown herbivores (deer) can likely eat the leaves of an entire 
   ## individual in age classes 1 and 2, we will assign higher alpha values to the smaller age 
   ## classes and lower alpha values to the larger age classes
-  alphascaling <- data.frame("age_class" = c(1:10), "alpha" = c(0.009, 0.008, 0.007, 0.006, 0.006, 0.006, 
-                                                                0.005, 0.004, 0.003, 0.001))
+  alphascaling <- data.frame("age_class" = c(1:10), "alpha" = c(0.0009, 0.0008, 0.0007, 0.00006, 0.00006, 0.00006, 
+                                                                0.00005, 0.00004, 0.00003, 0.000001))
   ###^Written by Kaili  
   
   #initialize results matrix
@@ -61,6 +62,7 @@ treepopsmodel = function(t = 44, timestep = 1, initialpops = c(1000,200,188,170,
   #age_matrix[]  = 0
   #age_matrix[1,] = fert_rates
   #age_matrix[2,] = mort_rates
+  #for the desired time length:
   #for the desired time length:
   for(i in 1:t) { #run 1 timestep of the model
     #at the start of a timestep the survivability matrix is:
@@ -90,9 +92,12 @@ treepopsmodel = function(t = 44, timestep = 1, initialpops = c(1000,200,188,170,
     endindex = 12*i
     d_input = PMinusPET[startindex:(endindex+100)]
     
-    
     #get the drought related deaths/rates [looks like it's a rate - % of standing dead trees, which I take to mean % of trees that DIE of drought at the timestep]
-    dm_temp = drought_function(d_input) #this is currently broken - I half expect something happened with the library
+    dm_temp = drought_function(d_input,WD = WD, SLA = SLA) #this is currently broken - I half expect something happened with the library
+    if(dm_temp[12,]>0.99){
+      dm_temp[12,]=0.99
+    }
+    
     
     droughtmort = dm_temp[12*timestep,]*pops[i,] #if drought mortality % is over 100% for some reason, set it to 100%
     
@@ -151,12 +156,15 @@ treepopsmodel = function(t = 44, timestep = 1, initialpops = c(1000,200,188,170,
   }
   
   #what we actually want is to return a single number or a series of numbers
-  
+  if(return_only_pops){
+    return(pops)  
+  }
   #if the trees do NOT survive to the end:
+  
   survived_to = 0
-  if(sum(pops[length(pops),]) == 0) {
+  if(sum(pops[(t+1),]) == 0) {
     #then we want to know the last year in which there were living trees
-    i = length(pops)
+    i = (t+1)
     survivors = 0
     while(survivors == 0){
       survivors = sum(pops[i,])
@@ -167,10 +175,20 @@ treepopsmodel = function(t = 44, timestep = 1, initialpops = c(1000,200,188,170,
     survivors = 0
   } else{ #otherwise,
     #the trees survived to length(pops)
-    survived_to = length(pops)
+    survived_to = (t+1)
     #and the surviving tree pops is the sum of the age bins
-    survivors = sum(pops[length(pops),])
+    survivors = sum(pops[(t+1),])
   }
   
-  return(list(survived_to,survivors))
+  #what metric is actually meaningful to compare?
+  
+  #let's try looking at the average number of individuals across the entire time period
+  average_population = sum(pops[,])/(t+1)
+  
+  #would be good to have some indicators of age structure impact too
+  average_youngpops = sum(pops[,1])/(t+1) #the average population in the youngest bin
+  
+  average_oldpops = sum(pops[,8:10])/(t+1) #the average population in the oldest 3 [this is arbitrary] bins 
+  
+  return(list(survived_to,survivors,average_population,average_youngpops,average_oldpops))
 }
