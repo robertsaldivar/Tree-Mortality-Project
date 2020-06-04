@@ -24,11 +24,11 @@ drought_function <- function(input_data, WD = 0.946, SLA = 7.39, coeff1 = -1.28,
   
   log_mortality_drought = coeff1*SPEI + coeff2*SPEI*WD + coeff3*SPEI*SLA
   
+  
   drought_mortality = exp(log_mortality_drought)
   
   drought_mortality_rate = drought_mortality/100
   
-  #ifelse((drought_mortality_rate >= 1), 0.99, drought_mortality_rate)
   
   return(drought_mortality_rate)
 }
