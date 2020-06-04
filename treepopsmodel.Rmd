@@ -49,6 +49,7 @@ mort_rates = c(0.8,          #0-9
 #by default we'll use the testing data available from the SPEI library
 data(balance)
 PMinusPET = balance$tampa
+
 #there isn't enough data by default for 100 years
 ###For grazing calculation: needs the INITIAL herbivore POPULATION COUNT
 herb_n = 200
@@ -187,13 +188,17 @@ for(i in 1:t) { #run 1 timestep of the model
 
 ```{r visualize results}
 #add the time in:
+getplottable_n = function(pops,t = 99,timestep = 1){
 time_ = seq(from = 0, to = t)*timestep
 pops2 = cbind.data.frame(pops,time_)
 #"0-9","10-19","20-29","30-39","40-49","50-59","60-69","70-79","80-89","90-99"
 colnames(pops2) = c(1,2,3,4,5,6,7,8,9,10,"time")
 #plot results vs time
 pops_display = pops2 %>% gather(key = "age_range",value = "population",-time)
-ggplot(data = pops_display, aes(time, population, fill = age_range))+geom_col()+labs(x = "time in years", title = "Tree population size over time")
+p1 = ggplot(data = pops_display, aes(time, population, fill = age_range))+geom_col()+labs(x = "time in years", title = "Tree population size over time")
+show(p1)
+}
+getplottable_n(pops)
 ```
 
 ```{r compare}
@@ -209,5 +214,30 @@ sum(pops-pops_func)
 #test the function version
 results_test = treepopsmodel()
 results_test2 = treepopsmodel(WD = 0.8)
+
+```
+
+```{r moredrought}
+#run the model again with more drought conditions
+pops_moredrought = treepopsmodel(return_only_pops = TRUE,drought_increase = 2)
+#check if there was an actual difference
+sum(pops-pops_moredrought)
+getplottable_n(pops_moredrought)
+
+#CURRENTLY THE CLIMATE DATA SEEMS TO MAKE VIRTUALLY NO DIFFERENCE - is it interested in the CHANGE IN the values in balance? If so, adding the same number to everything in it would not do anything
+
+#It does not seem to care about increasing the magnitude of everything either - I multiplied all values by 2, and the result is EXACTLY the same
+
+#Without knowing what it is actually doing I can't figure out what modification to make to the input data in order to represent a more severe drought.
+```
+
+```{r moreherbivores}
+#run the model again with more herbivores
+pops_moreherbs = treepopsmodel(return_only_pops = TRUE,herb_n = 10000)
+sum(pops-pops_moreherbs)
+pops-pops_moreherbs
+getplottable_n(pops_moreherbs)
+
+#it LOOKS LIKE this causes the total pops across all timesteps to get lower, but that the difference becomes negligible the longer the model runs for - I can make the code do some 'nicer' analysis to confirm (or deny) this later on
 
 ```

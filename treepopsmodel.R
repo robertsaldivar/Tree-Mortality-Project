@@ -7,7 +7,7 @@ library(tidyverse)
 source("Drought2.R") #get the drought functions
 source("grazingsubmodel.R")
 
-treepopsmodel = function(return_only_pops = FALSE, t = 99, timestep = 1, initialpops = c(1000,200,188,170,153,120,80,37,15,6),herb_n = 200,WD=0.946,SLA=7.39,coeff1=-1.28,coeff2=0.38,coeff3=-0.41){
+treepopsmodel = function(return_only_pops = FALSE, t = 99, timestep = 1, initialpops = c(1000,200,188,170,153,120,80,37,15,6),herb_n = 200,WD=0.946,SLA=7.39,coeff1=-1.28,coeff2=0.38,coeff3=-0.41,drought_increase = 0){
   ###ENTER THE DESIRED INPUTS HERE
   
   #pops in each age bin (age bins are 0-9,10-19,20-29, etc, with last being 90-99)
@@ -21,6 +21,7 @@ treepopsmodel = function(return_only_pops = FALSE, t = 99, timestep = 1, initial
   #by default we'll use the testing data available from the SPEI library
   data(balance)
   PMinusPET = balance$tampa
+  #PMinusPET = PMinusPET*drought_increase CURRENTLY NOT USING until we know what change to make
   #there isn't enough data by default for 100 years
   
   
