@@ -213,9 +213,17 @@ results_test = treepopsmodel()
 results_test2 = treepopsmodel(WD = 0.8)
 ```
 
+```{r}
+#Getting a summary of the data for tampa and albuquerque
+
+summary(balance$tampa)
+summary(balance$albuquerque)
+```
+
+
 ```{r moredrought}
 #run the model again with more drought conditions
-pops_moredrought = treepopsmodel(return_only_pops = TRUE,drought_increase = 2)
+pops_moredrought = treepopsmodel(return_only_pops = TRUE,PMinusPET = balance$albuquerque)
 #check if there was an actual difference
 sum(pops-pops_moredrought)
 getplottable_n(pops_moredrought)
@@ -223,6 +231,7 @@ getplottable_n(pops_moredrought)
 #It does not seem to care about increasing the magnitude of everything either - I multiplied all values by 2, and the result is EXACTLY the same
 #Without knowing what it is actually doing I can't figure out what modification to make to the input data in order to represent a more severe drought.
 ```
+
 
 ```{r moreherbivores}
 #run the model again with more herbivores
