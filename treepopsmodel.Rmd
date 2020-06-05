@@ -216,8 +216,7 @@ results_test2 = treepopsmodel(WD = 0.8)
 ```{r}
 #Getting a summary of the data for tampa and albuquerque
 
-summary(balance$tampa)
-summary(balance$albuquerque)
+summary(balance)
 ```
 
 
@@ -227,6 +226,8 @@ pops_moredrought = treepopsmodel(return_only_pops = TRUE,PMinusPET = balance$alb
 #check if there was an actual difference
 sum(pops-pops_moredrought)
 getplottable_n(pops_moredrought)
+sum(pops)
+sum(pops_moredrought)
 #CURRENTLY THE CLIMATE DATA SEEMS TO MAKE VIRTUALLY NO DIFFERENCE - is it interested in the CHANGE IN the values in balance? If so, adding the same number to everything in it would not do anything
 #It does not seem to care about increasing the magnitude of everything either - I multiplied all values by 2, and the result is EXACTLY the same
 #Without knowing what it is actually doing I can't figure out what modification to make to the input data in order to represent a more severe drought.
