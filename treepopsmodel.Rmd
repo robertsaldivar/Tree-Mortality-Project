@@ -191,10 +191,14 @@ getplottable_n = function(pops,t = 99,timestep = 1){
 time_ = seq(from = 0, to = t)*timestep
 pops2 = cbind.data.frame(pops,time_)
 #"0-9","10-19","20-29","30-39","40-49","50-59","60-69","70-79","80-89","90-99"
-colnames(pops2) = c(1,2,3,4,5,6,7,8,9,10,"time")
+colnames(pops2) = c("0-9","10-19","20-29","30-39","40-49","50-59","60-69","70-79","80-89","90-99","time")
 #plot results vs time
 pops_display = pops2 %>% gather(key = "age_range",value = "population",-time)
-p1 = ggplot(data = pops_display, aes(time, population, fill = age_range))+geom_col()+labs(x = "time in years", title = "Tree population size over time")
+p1 = ggplot(data = pops_display, aes(time, population, fill = age_range))+
+  geom_col()+
+  labs(x = "Time (years)", y = "Population", title = "Tree Population Over Time", fill = "Age Range") +
+  scale_y_continuous(limits = c(0, 300000), breaks = c(0, 100000, 200000, 300000))+
+  theme_bw()
 show(p1)
 }
 getplottable_n(pops)
@@ -242,3 +246,13 @@ pops-pops_moreherbs
 getplottable_n(pops_moreherbs)
 #it LOOKS LIKE this causes the total pops across all timesteps to get lower, but that the difference becomes negligible the longer the model runs for - I can make the code do some 'nicer' analysis to confirm (or deny) this later on
 ```
+
+```{r}
+#Adding a place to see all of the graphs right next to each other!
+
+getplottable_n(pops)
+getplottable_n(pops_moredrought)
+getplottable_n(pops_moreherbs)
+
+```
+
