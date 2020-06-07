@@ -1,7 +1,7 @@
 ---
 title: "tree pops model"
-author: "Trevor L Romich"
-date: "5/21/2020"
+author: "Trevor, Kaili, Robert"
+date: "6/7/2020"
 output: html_document
 ---
 
@@ -10,9 +10,9 @@ output: html_document
 ```{r setup, include=FALSE}
 library(SPEI)
 library(tidyverse)
-#source("age_fxns.R") #get the age growth and mortality functions - currently not actually needed!
-source("Drought2.R") #get the drought functions
-source("grazingsubmodel.R")
+source("treepopsmodel.R") #get the function version of this (used below)
+source("Drought2.R") #get the drought function
+source("grazingsubmodel.R") #get the grazing and age function
 ```
 
 ```{r model inputs}
@@ -31,7 +31,7 @@ PMinusPET = balance$albuquerque #this version does the MORE DROUGHT version - th
 #there isn't enough data by default for 100 years
 ###For grazing calculation: needs the INITIAL herbivore POPULATION COUNT
 herb_n = 200
-####Written by Kaili:
+
 # biomass scaling data frame
   ## We also need a biomass scaling data frame, which has age class-specific scaling factors. 
   ## For example, each individual in age class 1 has an average biomass (g C) of 0.5, etc. This 
@@ -47,7 +47,7 @@ herb_n = 200
   ## classes and lower alpha values to the larger age classes
   alphascaling <- data.frame("age_class" = c(1:10), "alpha" = c(0.0009, 0.0008, 0.0007, 0.00006, 0.00006, 0.00006, 
                                                                 0.00005, 0.00004, 0.00003, 0.000001))
-###^Written by Kaili  
+
 ```
 
 ```{r model setup}
@@ -55,31 +55,11 @@ herb_n = 200
 pops = data.frame(t(initialpops))
 colnames(pops) = c("0-9","10-19","20-29","30-39","40-49","50-59","60-69","70-79","80-89","90-99")
 pops[2:(t+1),]=0
-#initialize the age matrix
-#age_matrix = matrix(nrow = 2, ncol = length(initialpops)) #only really need 2 rows:
-  #1st row is for fertility rates
-  #2nd row is for death rates
-  #the columns represent the age bins
-#age_matrix[]  = 0
-#age_matrix[1,] = fert_rates
-#age_matrix[2,] = mort_rates
-```
-
-```{r test grazing submodel}
-test = grazingsubmodel(herb_n = herb_n,tree_n = pops[1,],biomassscaling = biomassscaling, alphascaling = alphascaling) #it 'works' but amount lost is higher than the population for the default values 
 ```
 
 ``` {r model loop}
 #for the desired time length:
 for(i in 1:t) { #run 1 timestep of the model
-  #at the start of a timestep the survivability matrix is:
-  # Fertility row:  [whatever the fertility rate set above is]
-  # Death rows:     0 0 0 0 0
-  #                 0 0 0 0 0
-  #                 ...
-  
-  #we will need to reset the death rows to just the age-related death fractions
-  #age_matrix[2,]=mort_rates
   
   #get the herbivore related deaths/rates [what should be returned is either:
   
@@ -89,7 +69,7 @@ for(i in 1:t) { #run 1 timestep of the model
   newpops_g = grazingoutput[[1]]
   
   ######Drought related mortality
-  ###FOR ME: get JUST THE MOST RECENT 24 MONTHS of P minus PET
+  
   #each +1 to i is +12 to the drought index we want
   #on 1st timestep we want from 1 to 12, which is i to 12i
   #on 2nd timestep we want from 13 to 24, which is 12(i-1)+1 to 12i
@@ -97,19 +77,20 @@ for(i in 1:t) { #run 1 timestep of the model
   
   startindex = 12*(i-1)+1
   endindex = 12*i
-  d_input = PMinusPET[startindex:(endindex+100)]
+  d_input = PMinusPET[startindex:(endindex+100)] #it needs an input with a length of around 100 to function
   
-  #get the drought related deaths/rates [looks like it's a rate - % of standing dead trees, which I take to mean % of trees that DIE of drought at the timestep]
-  dm_temp = drought_function(d_input) #this is currently broken - I half expect something happened with the library
-  if(dm_temp[12,]>0.99){
+  #get the drought related death rate
+  dm_temp = drought_function(d_input)
+  if(dm_temp[12,]>0.99){ #cap drought mortality at 99%
     dm_temp[12,]=0.99
   }
   
   
-  droughtmort = dm_temp[12*timestep,]*pops[i,] #if drought mortality % is over 100% for some reason, set it to 100%
+  droughtmort = dm_temp[12*timestep,]*pops[i,] #get the actual number that die of drought
   
-  
+  #get the actual new population
   newpops = newpops_g - droughtmort
+  
   #no newpops bin can be less than 0
   for(i2 in 1:length(newpops)){
     if(newpops[i2] < 0){
@@ -118,54 +99,16 @@ for(i in 1:t) { #run 1 timestep of the model
     
   }
   
-  #deathrow_update = matrix(nrow = 1, ncol = lpops)
-  #for(i2 in 1:lpops){
-  #deathrow_update[i2] = min(1,(age_matrix[2,i2] + droughtmort))
-  #}
-  
-  
-  #get the dpops value
-  #dpops = matrix(nrow = 1, ncol = lpops)
-  #dpops[1,]=0
-  
-  #newpops = dpops
-  #prevbinageup = 0
-  #currentbinageup = 0
-  #for(i2 in 1:lpops){
-    #for ANY bin, get the deaths during the timestep:
-  #    dpops[i2] =  g_mort[[i2]]-age_matrix[2,i2]*pops[i,i2]
-         #herbivory deaths [returned as a negative number already]
-         #the fraction of the bin's pops that died due to drought and other causes
-         
-    #of the survivors, 1/10*timestep will advance to the next age bin
-    #currentbinageup = 0.1*timestep*pops[i,i2]-dpops[i2]
-    
-    
-    #components that differ between the seedling bin and the other bins  
-    #if(i2 == 1){ #if we are doing the seedlings, add up all the seedling production from each age range
-    #  newseedlings = sum(pops[i,i2]*age_matrix[1,])
-    #  dpops[i2] = dpops[i2] +  newseedlings - currentbinageup
-      
-    #} else{ #otherwise, add in age up from prior age bin
-    #  dpops[i2] = dpops[i2]+prevbinageup - currentbinageup
-    #}
-    #at this point we can assign the current bin ageup amount to the prev bin value for use on the next iteration
-    #prevbinageup = currentbinageup
-    
-    #now that we have the change, get the new pops in the bin (capped at minimum of 0) 
-    #newpops[i2] = max(0,(pops[i,i2]+dpops[i2]))
-    
-  #}
   
   #add this to the next row in pops
   pops[(i+1),] = newpops
   
 }
-#Add in something for visualization of the model
+
 ```
 
 ```{r visualize results}
-#add the time in:
+#function for visualization:
 
 getplottable_n = function(pops,t = 99,timestep = 1,usedifftitle = FALSE,specialtitle = "test"){
 time_ = seq(from = 0, to = t)*timestep
@@ -178,7 +121,6 @@ pops_display = pops2 %>% gather(key = "age_range",value = "population",-time)
 p1 = ggplot(data = pops_display, aes(time, population, fill = age_range))+
   geom_col()+
   labs(x = "Time (years)", y = "Population", title = title_, fill = "Age Range") +theme_bw()
-## +  scale_y_continuous(limits = c(0, 300000), breaks = c(0, 100000, 200000, 300000))
 show(p1)
 }
 getplottable_n(pops)
@@ -187,22 +129,6 @@ getplottable_n(pops)
 ```{r}
 #Getting a summary of the data for tampa and albuquerque
 summary(balance)
-```
-
-```{r compare}
-#compare with the function version - for same inputs, the diff between the pops data should always be zero
-source("treepopsmodel.R")
-
-pops_func = treepopsmodel(return_only_pops = TRUE)
-sum(pops-pops_func)
-
-```
-
-```{r function testing}
-#test the function version
-results_test = treepopsmodel()
-results_test2 = treepopsmodel(WD = 0.8)
-
 ```
 
 ```{r drought}
@@ -239,7 +165,7 @@ dperc_reduction = 100*de_avg / lessdrought_avg
 
 ```{r moreherbivores}
 #run the model again with more herbivores
-pops_moreherbs = treepopsmodel(return_only_pops = TRUE,herb_n = 500) #this uses the Tampa climate
+pops_moreherbs = treepopsmodel(return_only_pops = TRUE,herb_n = 400) #this uses the Tampa climate
 pops_lessherbs = treepopsmodel(return_only_pops = TRUE,herb_n = 200) #this uses the Tampa climate
 
 #should be negative where there were fewer with more herbs
@@ -278,3 +204,4 @@ getplottable_n(pops)
 getplottable_n(pops_moredrought)
 getplottable_n(pops_moreherbs)
 ```
+
