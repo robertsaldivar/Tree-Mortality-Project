@@ -21,6 +21,10 @@
 ## - trees do not lose leaves seasonally, able to be eaten by herbivores at all time steps
 ## - alpha value is based on biological relationship between herbivores (deer in this case) 
 ##   and trees (oaks in this case)
+## - herbivore carrying capacity is set to a user-selected value. If the herbivore population
+##   exceeds this number, the herbivore population is set to the carrying capacity value 
+##   (resembling natural conditions where a location cannot support any additional animals on 
+##   the landscape). Growth rate does not slow as this value is approached.
 
 
 # 2. use equations that give total biomass (and total amount) of tree + herb populations
