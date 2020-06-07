@@ -4,9 +4,16 @@
 #' @param tree_K trees carrying capacity
 #' @param tree_n number of trees from last timestep
 #' @param herb_n number of herbivores from last timestep
+#' @param biomassscaling the data frame containing biomass conversion factors for the tree 
+#' population
+#' @param alphascaling the data frame containing alpha values that represent the effect of the 
+#' herbivore population on the tree population
+#' @param alpha2 the alpha value representing the effect of the tree population on the herbivore 
+#' population
+#' @param herbcc the carrying capacity of the herbivore population
 
 
-# The plant and herbivore equations below are based off equations from Kang et al. 2008 
+# The plant and herbivore equations below are based off equations from Kang et al. 2008
 
 # The following assumptions are made in this model: 
 ## - entire canopy of individual tree is accessible to the herbivore at all times
@@ -18,13 +25,7 @@
 
 # 2. use equations that give total biomass (and total amount) of tree + herb populations
 
-grazingsubmodel = function(r=0.7, herb_n, tree_n, tree_K=200000, biomassscaling, alphascaling,alpha2 = 0.2, herbcc = 400){
-  
-  ###leftover from testing
-  #r=0.7
-  #tree_K=2000
-  ###  
-  # Need population values for age classes in a data frame
+grazingsubmodel = function(r=0.7, herb_n, tree_n, tree_K=200000, biomassscaling, alphascaling, alpha2 = 0.2, herbcc = 400){
   
   
   population_df <- data.frame("age_class" = c(1:10), "tree_n" = t(tree_n), "herb_n" = herb_n)
@@ -41,35 +42,23 @@ grazingsubmodel = function(r=0.7, herb_n, tree_n, tree_K=200000, biomassscaling,
   herb_biomass = population_df$herb_n * 5
   
   
-  # Equations from paper:
-  #x_t = P_t/Pmax
-  #y_t = H_t/Pmax
-  #xn+1 = 
-  
-  
   tree_biomass_n1 = tree_biomass*exp(r*(1-tree_biomass/tree_K)-alphascaling$alpha*(herb_biomass)) 
   
-  #conceptually this is not doing what we want it to. It is changing the herbivore biomass by including the herbivory AND
-  #natural growth rate for EACH 'age bin' of herbivores, even though there aren't any age bins of herbivores, just 10 different
-  #instances of the same herbivores, solely for the purpose of allowing them to prey on the trees in each age bin
   
-  #in other words, it's accounting for the natural growth rate of the same [herb_n] herbivores ten different times
-  
-  #for now we'll go with it though, and treat the herbivore biomamss as the sum of this value
+  # We'll treat the herbivore biomass as the sum of the tree biomass values across all age classes
   herbivore_biomass_n1 = alpha2*sum(tree_biomass) * exp(r * (1 - (sum(tree_biomass)/tree_K)))
+  
   if (herbivore_biomass_n1 > herbcc) {
     herbivore_biomass_n1 = herbcc
   }                                                
   
   
-  # Then convert total tree population biomass, for each age class, back into amount of individuals, at
-  # each time step. 
-  
+  # Then convert total tree population biomass, for each age class, back into amount of individuals,
+  # at each time step. 
   tree_individuals = tree_biomass_n1 * biomassscaling$scaling
-  #we can return this value directly
   
   
-  #convert herbivores back to number of individuals in case we want to plot them
+  #convert herbivores back to number of individuals
   newherb_n = sum(herbivore_biomass_n1)/5
   
   return(list(tree_individuals,newherb_n)) 
