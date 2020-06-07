@@ -1,16 +1,16 @@
 #' Drought Submodel
 #'
 #'
-#'@param SPEI The Standardised Precipitation-Evapotranspiration Index The range for the input is -3 to 3
+#'@param input_data The input_data is the climatic water balance.
 #'@param WD This the mean wood density. The default is set for Quercus virginiana
-#'@param SLA The Surface mean Leaf Area. The default is set for Quercus virginiana
-#'@return log Mortality (log trees/Trees*Year)
+#'@param SLA The mean Surface Leaf Area. The default is set for Quercus virginiana
+#'@param Coeff1 This is the coefficienct that is SPEI part of the equation. THe default is set to -1.28 but the potential range of the parameter is -1.28 to -0.52
+#'@param Coeff2 This is the coefficienct that is SPEI*WD part of the equation. THe default is set to 0.38 but the potential range of the parameter is -0.2 to 0.97
+#'@param Coeff3 This is the coefficienct that is SPEI*SLA part of the equation. THe default is set to -0.41 but the potential range of the parameter is -0.95 to 0.13
+#'@return mortality rate
 #'
-#'References for 
 #'
-#' models mortality data (proportion of standing dead trees and annual rates). Models only for adult trees not seedlings or saplings
-#' 
-#'  for the input data I am currently using the balance data from the SPEI package
+
 
 library(SPEI)
 
@@ -24,11 +24,11 @@ drought_function <- function(input_data, WD = 0.946, SLA = 7.39, coeff1 = -1.28,
   
   log_mortality_drought = coeff1*SPEI + coeff2*SPEI*WD + coeff3*SPEI*SLA
   
+  
   drought_mortality = exp(log_mortality_drought)
   
   drought_mortality_rate = drought_mortality/100
   
-  #ifelse((drought_mortality_rate >= 1), 0.99, drought_mortality_rate)
   
   return(drought_mortality_rate)
 }
