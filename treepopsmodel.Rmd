@@ -18,37 +18,16 @@ source("grazingsubmodel.R")
 ```{r model inputs}
 ###ENTER THE DESIRED INPUTS HERE
 t = 99 #the length of time (in years) for the model to run
-timestep = 1 #the number of years per timestep
+timestep = 1 #the number of years per timestep - right now this needs to be 1
 initialpops = c(1000,200,188,170,153,120,80,37,15,6) #pops in each age bin (age bins are 0-9,10-19,20-29, etc, with last being 90-99)
 lpops = length(initialpops) #the NUMBER of different age bins
-fert_rates = c(0,          #0-9
-               0,          #10-19
-               0.5,        #20-29
-               0.5,        #30-39
-               0.5,        #40-49
-               0.5,        #50-59
-               0.5,        #60-69
-               0.5,        #70-79
-               0.5,        #80-89
-               0.5         #90-99
-               ) #fraction of the population in each age bin that is added to the first age bin as new seedlings
-#example: if the 4th value in this is 0.9, and there are 100 individuals between age 30 and 39 (the 4th age bin), then the 4th age bin will contribute 0.9*100 = 90 new seedlings
-mort_rates = c(0.8,          #0-9
-               0.4,          #10-19
-               0.3,        #20-29
-               0.2,        #30-39
-               0.1,        #40-49
-               0.1,        #50-59
-               0.3,        #60-69
-               0.5,        #70-79
-               0.7,        #80-89
-               1         #90-99
-               ) #fraction of the population in each age bin that DIES (not survivability)
+
 ###For drought calculation: needs precipitation data in MONTHS for the entire time range AND the [timestep] years prior to the start of that range
 #the FIRST value in this (i.e. index = 1) should be from [timestep] years before the intended start time
 #by default we'll use the testing data available from the SPEI library
 data(balance)
-PMinusPET = balance$tampa
+PMinusPET = balance$albuquerque #this version does the MORE DROUGHT version - the treepopsmodel.R version does Tampa, which is LESS DROUGHT
+
 #there isn't enough data by default for 100 years
 ###For grazing calculation: needs the INITIAL herbivore POPULATION COUNT
 herb_n = 200
@@ -187,56 +166,71 @@ for(i in 1:t) { #run 1 timestep of the model
 
 ```{r visualize results}
 #add the time in:
-getplottable_n = function(pops,t = 99,timestep = 1){
+
+getplottable_n = function(pops,t = 99,timestep = 1,usedifftitle = FALSE,specialtitle = "test"){
 time_ = seq(from = 0, to = t)*timestep
 pops2 = cbind.data.frame(pops,time_)
 #"0-9","10-19","20-29","30-39","40-49","50-59","60-69","70-79","80-89","90-99"
 colnames(pops2) = c("0-9","10-19","20-29","30-39","40-49","50-59","60-69","70-79","80-89","90-99","time")
 #plot results vs time
+title_ = ifelse(usedifftitle, paste("Difference in tree population over time:",specialtitle),"Tree population over time")
 pops_display = pops2 %>% gather(key = "age_range",value = "population",-time)
 p1 = ggplot(data = pops_display, aes(time, population, fill = age_range))+
   geom_col()+
-  labs(x = "Time (years)", y = "Population", title = "Tree Population Over Time", fill = "Age Range") +
-  scale_y_continuous(limits = c(0, 300000), breaks = c(0, 100000, 200000, 300000))+
-  theme_bw()
+  labs(x = "Time (years)", y = "Population", title = title_, fill = "Age Range") +theme_bw()
+## +  scale_y_continuous(limits = c(0, 300000), breaks = c(0, 100000, 200000, 300000))
 show(p1)
 }
 getplottable_n(pops)
 ```
 
+```{r}
+#Getting a summary of the data for tampa and albuquerque
+summary(balance)
+```
+
 ```{r compare}
 #compare with the function version - for same inputs, the diff between the pops data should always be zero
 source("treepopsmodel.R")
+
 pops_func = treepopsmodel(return_only_pops = TRUE)
 sum(pops-pops_func)
+
 ```
 
 ```{r function testing}
 #test the function version
 results_test = treepopsmodel()
 results_test2 = treepopsmodel(WD = 0.8)
+
 ```
 
-```{r}
-#Getting a summary of the data for tampa and albuquerque
-
-summary(balance)
-```
-
-
-```{r moredrought}
-#run the model again with more drought conditions
-pops_moredrought = treepopsmodel(return_only_pops = TRUE,PMinusPET = balance$albuquerque)
+```{r drought}
+#run the model again with less drought conditions (Tampa data)
+pops_lessdrought = treepopsmodel(return_only_pops = TRUE)
 #check if there was an actual difference
-sum(pops-pops_moredrought)
-getplottable_n(pops_moredrought)
-sum(pops)
-sum(pops_moredrought)
-#CURRENTLY THE CLIMATE DATA SEEMS TO MAKE VIRTUALLY NO DIFFERENCE - is it interested in the CHANGE IN the values in balance? If so, adding the same number to everything in it would not do anything
-#It does not seem to care about increasing the magnitude of everything either - I multiplied all values by 2, and the result is EXACTLY the same
-#Without knowing what it is actually doing I can't figure out what modification to make to the input data in order to represent a more severe drought.
-```
+sum(pops-pops_lessdrought) #there is a substantial difference
 
+
+getplottable_n(pops_lessdrought)
+
+#the difference drought - less drought
+drought_effect = pops - pops_lessdrought
+getplottable_n(drought_effect,usedifftitle = TRUE,specialtitle = "Normal - Drought")
+#it is not terribly informative since the predator prey cycle means there are also many timesteps where there are more individuals, but it's still possible to tell that the drought decreased the population size on average (more bars are negative, meaning lessdrought had more pops alive)
+
+de_avg = drought_effect[1,] #AVERAGE drought effect by age class
+for(i in 1:lpops){
+  #for each age bin
+  de_avg[i] = mean(drought_effect[,i])
+}
+#average drought effect by age class, averaged across the entire run time
+print(de_avg)
+
+#all of them are negative, so drought reduced the population in every age class
+#(we would test for statistical significance here if this were real research)
+
+```
 
 ```{r moreherbivores}
 #run the model again with more herbivores
@@ -244,15 +238,30 @@ pops_moreherbs = treepopsmodel(return_only_pops = TRUE,herb_n = 10000)
 sum(pops-pops_moreherbs)
 pops-pops_moreherbs
 getplottable_n(pops_moreherbs)
-#it LOOKS LIKE this causes the total pops across all timesteps to get lower, but that the difference becomes negligible the longer the model runs for - I can make the code do some 'nicer' analysis to confirm (or deny) this later on
+
+#the difference herbivores - more drought
+herb_effect = pops - pops_moreherbs
+getplottable_n(herb_effect,usedifftitle = TRUE,specialtitle = "Low - High herbivore population") #this is actually the difference, not the population size, so should change the title
+
+
+he_avg = herb_effect[1,] #AVERAGE drought effect by age class
+for(i in 1:lpops){
+  #for each age bin
+  he_avg[i] = mean(herb_effect[,i])
+}
+#average drought effect by age class, averaged across the entire run time
+print(he_avg)
+sum(he_avg[1:3])
+sum(he_avg[4:10])
+
+#more herbivores means lower population in the lowest three age classes (values are positive so lower herbivore case was higher), but means higher population in the other age classes. The overall effect is reduction in population, with the impact on the lowest 3 age classes being roughly 10 times greater than the impact on all other age classes
+
+
 ```
 
 ```{r}
 #Adding a place to see all of the graphs right next to each other!
-
 getplottable_n(pops)
 getplottable_n(pops_moredrought)
 getplottable_n(pops_moreherbs)
-
 ```
-
