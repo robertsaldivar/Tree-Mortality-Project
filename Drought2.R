@@ -8,6 +8,7 @@
 #'@param Coeff2 This is the coefficienct that is SPEI*WD part of the equation. THe default is set to 0.38 but the potential range of the parameter is -0.2 to 0.97
 #'@param Coeff3 This is the coefficienct that is SPEI*SLA part of the equation. THe default is set to -0.41 but the potential range of the parameter is -0.95 to 0.13
 #'@return mortality rate
+#'@references Greenwood, Sarah, Paloma Ruiz-Benito, Jordi Martínez-Vilalta, Francisco Lloret, Thomas Kitzberger, Craig D. Allen, Rod Fensham, et al. 2017. “Tree Mortality across Biomes Is Promoted by Drought Intensity, Lower Wood Density and Higher Specific Leaf Area.” Edited by Jerome Chave. Ecology Letters 20 (4): 539–53. https://doi.org/10.1111/ele.12748.
 #'
 #'
 

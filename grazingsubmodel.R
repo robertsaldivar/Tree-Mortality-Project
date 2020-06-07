@@ -11,6 +11,7 @@
 #' @param alpha2 the alpha value representing the effect of the tree population on the herbivore 
 #' population
 #' @param herbcc the carrying capacity of the herbivore population
+#' @references Kang, Yun, Dieter Armbruster, and Yang Kuang. 2008. “Dynamics of a Plant–Herbivore Model.” Journal of Biological Dynamics 2 (2): 89–101. https://doi.org/10.1080/17513750801956313.
 
 
 # The plant and herbivore equations below are based off equations from Kang et al. 2008
