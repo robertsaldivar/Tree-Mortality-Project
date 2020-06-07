@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+library(ggplot2)
 library(tidyverse)
 library(sensitivity)
 
@@ -18,13 +19,13 @@ source("treepopsmodel.R")
 #do a sobol sensitivity analysis
 
 
-count = 100
+count = 1000
 
 #test the parameters from the drought submodel
 
 ###FOR ME TO DO: change to only do the test on the first 2: wood density and SLA
 p = c(WD = 0.946, SLA = 7.39, coeff1 = -1.28, coeff2 = 0.38, coeff3 = -0.41)
-sdvar = 0.1 #makes the SD equal to this times the value of the mean
+sdvar = 0.5 #makes the SD equal to this times the value of the mean
 
 #get first test
 p1_test = rnorm(n = count, mean = p[1], sd = abs(sdvar*p[1]))
@@ -46,21 +47,115 @@ p2_test = rnorm(n = count, mean = p[2], sd = abs(sdvar*p[2]))
 test2 = cbind.data.frame(p1_test,p2_test)#,p3_test,p4_test,p5_test)
 
 soboltest = sobol2007(X1 = test1, X2 = test2, nboot = 100)
-
+soboltest1 = soboltest
+soboltest2 = soboltest
+soboltest3 = soboltest
+soboltest4 = soboltest
 
 #this part functions - as far as I can tell, properly.
 #regardless of the input all trees are dead by the 8th timestep though.
 results = mapply(FUN = treepopsmodel,WD = soboltest$X$p1_test,SLA = soboltest$X$p2_test)#,coeff1 = soboltest$X$p3_test,
                  #coeff2 = soboltest$X$p4_test,coeff3 = soboltest$X$p5_test)
+names_ = c("survivaltime","survivors","average_population","average_young_pops","average_old_pops")
+results2 = as.data.frame(matrix(unlist(results), ncol = 5, byrow = T))
+colnames(results2) = names_
 
+#are there any that didn't survive to the end?
+nosurvivors_ct = 0
+for(i in 1:dim(results2)[1]){
+  if(results2[i,2] == 0){ #if the number that survived to the end is zero
+    nosurvivors_ct = (nosurvivors_ct +1)
+  }
+}
 
+c("survivors","average population","average young pops","average old pops")
+if(nosurvivors_ct > 0){
+  print("Warning: some parameter combinations resulted in no survivors")
+} else{ #if there aren't then we only care about the [[number of survivors]]*
+  
+  #if the [[number of survivors]] is the same for everything then return an error message
+  if(var(results2[,2] == 0)){
+    print("Surviving popuation does not vary as a result of the parameters")
+  }else{
+  #otherwise do the testing
+  
+  soboltest1 = sensitivity::tell(soboltest,results2[,2],res.names=names_[2])
+  soboltest2 = sensitivity::tell(soboltest,results2[,3],res.names=names_[3])
+  soboltest3 = sensitivity::tell(soboltest,results2[,4],res.names=names_[4])
+  soboltest4 = sensitivity::tell(soboltest,results2[,5],res.names=names_[5])
+    
+  }
+  
+  
+}
 
-#treepopsmodel.R assesses the model based on: 1. the year to which the trees survived and 2. the number that survived to the end of the dataset
-results = as.data.frame(matrix(unlist(results), ncol = 2, byrow = T))
-colnames(results) = c("survivaltime","survivors")
-soboltest = sensitivity::tell(soboltest,results,res.names=c("survivaltime","survivors")) #this seems to have the exact same input format as the version used in lecture, but returns an error of "is.atomic(x) is not TRUE," whic seems to be a problem that's fairly deep in the code being called.
+getplottable = function(soboltestn,metric_name,param_name){
+  #metric_name is the name of the metric
+  #param_name is the name of the parameter (WD or SLA)
+  comb = cbind.data.frame(soboltestn$X,soboltestn$y)
+  colnames(comb) = c("WD","SLA",metric_name)
+  p = ggplot(comb,aes_string(x = param_name, y = metric_name))+geom_point()
+  show(p)
+  return(p)
+}
 
 
 ```
 
+```{r results survivors}
+#the sensitivity analysis results for SURVIVORS AT END
+#n = 2
+#plot(soboltest1)
+#p1 = getplottable(soboltest1,names_[n],"WD")
 
+#p1_2 = getplottable(soboltest1,names_[n],"SLA")
+
+
+```
+
+```{r boxplot}
+#boxplot of the results
+results3 = results2[,3:5] %>% gather(key = "metric", value = "result")
+ggplot(data = results3,aes(metric, result, col = metric))+geom_boxplot()
+
+
+```
+
+```{r results average}
+#the sensitivity analysis results for AVERAGE POPULATION
+plot(soboltest2)
+
+n = 3
+
+p1 = getplottable(soboltest2,names_[n],"WD")
+
+p1_2 = getplottable(soboltest2,names_[n],"SLA")
+
+#ADD IN A BOXPLOT
+```
+
+```{r results average young}
+#the sensitivity analysis results for AVERAGE POPULATION IN LOWEST AGE CLASS
+
+plot(soboltest3)
+
+n = 4
+
+p1 = getplottable(soboltest3,names_[n],"WD")
+
+p1_2 = getplottable(soboltest3,names_[n],"SLA")
+
+```
+
+```{r results average old}
+#the sensitivity analysis results for AVERAGE POPULATION IN OLDEST 3 AGE CLASSES [the 3 is arbitrary!]
+
+plot(soboltest4)
+
+n = 5
+
+p1 = getplottable(soboltest4,names_[n],"WD")
+
+p1_2 = getplottable(soboltest4,names_[n],"SLA")
+
+```
