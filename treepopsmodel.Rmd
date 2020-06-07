@@ -220,12 +220,17 @@ getplottable_n(drought_effect,usedifftitle = TRUE,specialtitle = "Normal - Droug
 #it is not terribly informative since the predator prey cycle means there are also many timesteps where there are more individuals, but it's still possible to tell that the drought decreased the population size on average (more bars are negative, meaning lessdrought had more pops alive)
 
 de_avg = drought_effect[1,] #AVERAGE drought effect by age class
+lessdrought_avg = de_avg
 for(i in 1:lpops){
   #for each age bin
   de_avg[i] = mean(drought_effect[,i])
+  lessdrought_avg[i] = mean(pops_lessdrought[,i])
 }
 #average drought effect by age class, averaged across the entire run time
 print(de_avg)
+
+#percent reduction: average effect / less drought case
+dperc_reduction = 100*de_avg / lessdrought_avg
 
 #all of them are negative, so drought reduced the population in every age class
 #(we would test for statistical significance here if this were real research)
@@ -234,25 +239,33 @@ print(de_avg)
 
 ```{r moreherbivores}
 #run the model again with more herbivores
-pops_moreherbs = treepopsmodel(return_only_pops = TRUE,herb_n = 10000)
-sum(pops-pops_moreherbs)
-pops-pops_moreherbs
+pops_moreherbs = treepopsmodel(return_only_pops = TRUE,herb_n = 500) #this uses the Tampa climate
+pops_lessherbs = treepopsmodel(return_only_pops = TRUE,herb_n = 200) #this uses the Tampa climate
+
+#should be negative where there were fewer with more herbs
+sum(pops_moreherbs-pops_lessherbs)
+pops_lessherbs-pops_moreherbs
 getplottable_n(pops_moreherbs)
 
 #the difference herbivores - more drought
-herb_effect = pops - pops_moreherbs
-getplottable_n(herb_effect,usedifftitle = TRUE,specialtitle = "Low - High herbivore population") #this is actually the difference, not the population size, so should change the title
+herb_effect = pops_moreherbs - pops_lessherbs
+getplottable_n(herb_effect,usedifftitle = TRUE,specialtitle = "High - Low herbivore population") #this is actually the difference, not the population size, so should change the title
 
 
-he_avg = herb_effect[1,] #AVERAGE drought effect by age class
+he_avg = herb_effect[1,] #AVERAGE herbivore effect by age class
+lessherbs_avg = he_avg
 for(i in 1:lpops){
   #for each age bin
   he_avg[i] = mean(herb_effect[,i])
+  lessherbs_avg[i] = mean(pops_lessherbs[,i])
 }
 #average drought effect by age class, averaged across the entire run time
 print(he_avg)
 sum(he_avg[1:3])
 sum(he_avg[4:10])
+
+#percent change
+hpercent_reduction = he_avg / lessherbs_avg
 
 #more herbivores means lower population in the lowest three age classes (values are positive so lower herbivore case was higher), but means higher population in the other age classes. The overall effect is reduction in population, with the impact on the lowest 3 age classes being roughly 10 times greater than the impact on all other age classes
 
