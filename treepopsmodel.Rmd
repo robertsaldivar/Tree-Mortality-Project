@@ -157,7 +157,7 @@ print(de_avg)
 
 #percent reduction: average effect / less drought case
 dperc_reduction = 100*de_avg / lessdrought_avg
-
+print(dperc_reduction)
 #all of them are negative, so drought reduced the population in every age class
 #(we would test for statistical significance here if this were real research)
 
@@ -191,8 +191,8 @@ sum(he_avg[1:3])
 sum(he_avg[4:10])
 
 #percent change
-hpercent_reduction = he_avg / lessherbs_avg
-
+hpercent_reduction = 100*he_avg / lessherbs_avg
+print(hpercent_reduction)
 #more herbivores means lower population in the lowest three age classes (values are positive so lower herbivore case was higher), but means higher population in the other age classes. The overall effect is reduction in population, with the impact on the lowest 3 age classes being roughly 10 times greater than the impact on all other age classes
 
 
